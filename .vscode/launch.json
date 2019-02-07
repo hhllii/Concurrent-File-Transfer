@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/myclient",
-            "args": ["server-info.txt", "1", "set"],
+            "args": ["serverinfo.txt", "1", "set"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

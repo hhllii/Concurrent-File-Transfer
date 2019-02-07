@@ -1,7 +1,26 @@
 #include"simpleSocket.h"
 
+struct SimpleAddress getAddressbyLine(char* line){
+    struct SimpleAddress simpleaddress;
+    //read address
+    char delim[]=" ";
+    char* res = NULL;
+    if((res=strtok(line,delim)) != NULL){
+        simpleaddress.address = res;
+        printf("*Address: %s\n",simpleaddress.address);
+    }
+    if((res=strtok(NULL,delim)) != NULL && portVarify(res)){
+        simpleaddress.port = atoi(res);
+        printf("*Port: %i\n",simpleaddress.port);
+    }else{ //error port set to default port num
+        simpleaddress.port = DEFAULT_PORT;
+    }
+    return simpleaddress;
+}
+
 bool portVarify(const char* port){
-    for(int i = 0; i < strlen(port); ++i){
+    //-1 for fgets() \n
+    for(int i = 0; i < strlen(port) - 1; ++i){
         if(!isdigit(port[i])){
             //inclued non-digit
             return false;

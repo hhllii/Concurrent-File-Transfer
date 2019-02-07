@@ -9,7 +9,16 @@
 #include<ctype.h>
 
 #define BUFFER_SIZE 1024 
+#define MAX_SERVER 128 
+#define DEFAULT_PORT 80
+
 //strcpy connot excess the BUFFER_SIZE 
+
+struct SimpleAddress{
+	int port;
+	char *address;
+};
+
 struct SimpleChunk{
 	int size, offset;
 	char buffer[BUFFER_SIZE];
@@ -18,6 +27,8 @@ struct SimpleChunk{
 
 
 bool portVarify(const char* port);
+
+struct SimpleAddress getAddressbyLine(char* line);
 
 void setTimeout(int sockfd, int send_time, int recv_time);
 

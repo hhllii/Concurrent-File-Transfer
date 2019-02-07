@@ -19,30 +19,29 @@ int main(int argc, char const *argv[])
         return 0;
     }
     const char* filename = argv[3];
-    const char* serverFilename = "server-info.txt";
-    // FILE *serverFp = fopen(filename, "r"));
-    // if((serverFp == NULL){
-    //     printf("open server-info file error! No such file: %s\n", argv[1]);
-    //     fclose(serverFp);
-    //     exit(1);
-    // }
+    const char* serverFilename = argv[1];
+    FILE *serverFp = fopen(serverFilename, "r");
+    if(serverFp == NULL){
+        printf("open server-info file error! No such file: %s\n", argv[1]);
+        fclose(serverFp);
+        exit(1);
+    }
 
     //read address
-    // char* serverBuffer;
-    // fgets(serverBuffer, 1024, serverFp);
-    // const char* delim=" ";
-    // char* p=strtok(serverBuffer,delim);
-    // char* address;
-    // strcpy(address, p);
-    // printf("*Address: %s\n",address);
-    // p=strtok(NULL,delim);
-    // char* port;
-    // strcpy(port, p);
-    // printf("*Port: %s\n",port);
-    const char* address = "127.0.0.1";
-    const char* port = "12345";
+    struct SimpleAddress addList[MAX_SERVER];
+    char serverBuffer[1024];
+    int add_index = 0;
+    while(fgets(serverBuffer, 1024, serverFp) != NULL){
+        printf("*address line: %s\n", serverBuffer);
+        addList[add_index] = getAddressbyLine(serverBuffer);
+        add_index++;
+    }
+    //add_index - 1 is the last address
 
-    // fclose(serverFp);
+    int port = addList[0].port;
+    char* address = addList[0].address;
+
+    fclose(serverFp);
     // Create socket
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
@@ -53,7 +52,7 @@ int main(int argc, char const *argv[])
     }
     // Create socket address
     memset(&serv_addr, '0', sizeof(serv_addr)); 
-    int port_num = atoi(port);
+    int port_num = port;
     serv_addr.sin_family = AF_INET; 
     serv_addr.sin_port = htons(port_num); 
 
