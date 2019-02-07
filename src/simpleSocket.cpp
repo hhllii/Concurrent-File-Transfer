@@ -9,22 +9,69 @@ struct SimpleAddress getAddressbyLine(char* line){
         simpleaddress.address = res;
         printf("*Address: %s\n",simpleaddress.address);
     }
-    if((res=strtok(NULL,delim)) != NULL && portVarify(res)){
-        simpleaddress.port = atoi(res);
-        printf("*Port: %i\n",simpleaddress.port);
+    if((res=strtok(NULL,delim)) != NULL){
+        res[strlen(res) - 1] = '\0';
+        if(portVarify(res)){ //valid port
+            simpleaddress.port = atoi(res);
+            printf("*Port: %i\n",simpleaddress.port);
+        }else{//error port set to default port num
+            simpleaddress.port = DEFAULT_PORT;
+        }
     }else{ //error port set to default port num
         simpleaddress.port = DEFAULT_PORT;
     }
     return simpleaddress;
 }
 
-bool portVarify(const char* port){
-    //-1 for fgets() \n
-    for(int i = 0; i < strlen(port) - 1; ++i){
-        if(!isdigit(port[i])){
+vector<int> getActiveSockList(vector<SimpleAddress> list){
+    vector<int> socklist;
+    for(auto add:list){
+        struct sockaddr_in serv_addr;
+        int sockfd = 0;
+        // Create socket address
+        memset(&serv_addr, '0', sizeof(serv_addr)); 
+        int port_num = add.port;
+        serv_addr.sin_family = AF_INET; 
+        serv_addr.sin_port = htons(port_num); 
+
+        if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 ){
+            printf("Create socket error: %s(errno: %d)\n",strerror(errno),errno);
+            continue;
+        }
+        // Convert IPv4 and IPv6 addresses from text to binary form 
+        if(inet_pton(AF_INET, add.address, &serv_addr.sin_addr)<=0)  
+        { 
+            printf("\n Invalid address: %s\n", add.address);
+            continue;
+        } 
+        if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) 
+        { 
+            printf("\n Connection Failed %s(errno: %d)\n",strerror(errno),errno);
+            continue;
+        } 
+        // Set timeout
+        setTimeout(sockfd, 3, 3);
+        //valid socket save it
+        socklist.push_back(sockfd);
+    }
+    return socklist;
+}
+
+
+bool checkdigit(const char* line){
+    for(int i = 0; i < strlen(line); ++i){
+        if(!isdigit(line[i])){
             //inclued non-digit
             return false;
         }
+    }
+    return true;
+}
+
+bool portVarify(const char* port){
+    //-1 for fgets() \n
+    if(!checkdigit(port)){
+        return false;
     }
     if(atoi(port) < 0 || atoi(port) > 65535){
         //invalid number
@@ -33,6 +80,13 @@ bool portVarify(const char* port){
     return true;
 }
 
+int getFileSize(FILE* fp){
+    int file_size;
+    fseek(fp, 0, SEEK_END ); // to file end
+    file_size=ftell(fp);
+    fseek(fp, 0, SEEK_SET ); // return to begin
+    return file_size;
+}
 
 void simpleSocketSend(int sockfd, SimpleChunk* chunk, int chunk_size){
     // Send data
@@ -40,7 +94,7 @@ void simpleSocketSend(int sockfd, SimpleChunk* chunk, int chunk_size){
     {
         printf("Send data error: %s(errno: %d)\n", strerror(errno), errno);
     }
-    printf("*Sending: \n%s\n", chunk->buffer);
+    //printf("*Sending: \n%s\n", chunk->buffer);
 }
 
 int simpleSocketRecv(int sockfd, SimpleChunk* chunk, int chunk_size){

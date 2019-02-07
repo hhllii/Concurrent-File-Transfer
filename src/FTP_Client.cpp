@@ -8,18 +8,39 @@
 #include <unistd.h>
 #include <errno.h>
 #include <iostream>
+#include <pthread.h>
+
+
 #include "simpleSocket.h"
+
+using namespace std;
+
+// void *downloadThread(void){
+
+// }
 
 int main(int argc, char const *argv[]) 
 { 
     int sockfd = 0;
     struct sockaddr_in serv_addr; 
+    int connectNum;
     if(argc != 4){
         printf("usage: ./myclient <server-info.txt> <num-connections> <filename>\n");
         return 0;
     }
-    const char* filename = argv[3];
-    const char* serverFilename = argv[1];
+    // Handle the num-connections
+    if(!checkdigit(argv[2])){
+        printf("Invalid num-connections\n");
+        return 0;
+    }
+    if(atoi(argv[2]) > MAX_SERVER){
+        printf("Excess the max num-connections\n");
+        return 0;
+    }
+
+    const char* serverFilename = argv[1]; //set servers list
+    connectNum = atoi(argv[2]); //set connection num
+    const char* filename = argv[3]; //set file name
     FILE *serverFp = fopen(serverFilename, "r");
     if(serverFp == NULL){
         printf("open server-info file error! No such file: %s\n", argv[1]);
@@ -27,49 +48,32 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    //read address
-    struct SimpleAddress addList[MAX_SERVER];
+    // Read address list
+    //struct SimpleAddress addList[MAX_SERVER];
+    vector<SimpleAddress> addList;
     char serverBuffer[1024];
     int add_index = 0;
     while(fgets(serverBuffer, 1024, serverFp) != NULL){
         printf("*address line: %s\n", serverBuffer);
-        addList[add_index] = getAddressbyLine(serverBuffer);
-        add_index++;
+        addList.push_back(getAddressbyLine(serverBuffer));
     }
+
     //add_index - 1 is the last address
 
     int port = addList[0].port;
     char* address = addList[0].address;
 
     fclose(serverFp);
-    // Create socket
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
-        printf("Socket creation error %s(errno: %d)\n", strerror(errno),errno);
-        return -1; 
-    }else{
-        printf("Socket created \n"); 
-    }
-    // Create socket address
-    memset(&serv_addr, '0', sizeof(serv_addr)); 
-    int port_num = port;
-    serv_addr.sin_family = AF_INET; 
-    serv_addr.sin_port = htons(port_num); 
 
-    // Convert IPv4 and IPv6 addresses from text to binary form 
-    if(inet_pton(AF_INET, address, &serv_addr.sin_addr)<=0)  
-    { 
-        printf("\n Invalid address: %s\n",address);
-        return -1; 
-    } 
-    // Socket connection
-    if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) 
-    { 
-        printf("\n Connection Failed %s(errno: %d)\n",strerror(errno),errno);
-        return -1; 
-    } 
-    // Set timeout
-    setTimeout(sockfd, 3, 3);
+    vector<int> socklist = getActiveSockList(addList);
+    for(auto sock : socklist){
+        printf("socket id: %i \n", sock);
+    }
+
+//==================================Thread Start==========================================
+
+    // Create socket
+    sockfd = socklist[0];
 
     // Send filename
     SimpleChunk chunk;
@@ -92,11 +96,11 @@ int main(int argc, char const *argv[])
         memset(&recvchunk,0,sizeof(recvchunk));
         // memset(recvchunk.buffer,'0',strlen(recvchunk.buffer));
         if(simpleSocketRecv(sockfd, recvchunkPtr, sizeof(struct SimpleChunk)) > 0){
-            printf("%s", recvchunk.buffer);
+            //printf("%s", recvchunk.buffer);
             fwrite(recvchunk.buffer, sizeof(char), strlen(recvchunk.buffer), fp);
         }else{
             //printf("%s\n", recvchunk.buffer);
-            printf("*End of data \n");
+            printf("*End of data recv\n");
             break;
         }
     }

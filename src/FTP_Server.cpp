@@ -62,7 +62,7 @@ int main(int argc, char** argv){
             if(simpleSocketRecv(connfd, chunkPtr, sizeof(struct SimpleChunk)) < 0){
                 //error with socket
                 printf("*End of client \n");
-                break;
+                continue;
             }else{
                 printf("Received message from client: %s\n", chunk.buffer);
                 filePath = chunk.buffer;
@@ -75,8 +75,13 @@ int main(int argc, char** argv){
             if(fp == NULL){
                 printf("open file error!\n");
                 fclose(fp);
-                break;
+                continue;
             }
+
+            // Get file size
+            int file_size = getFileSize(fp);
+            printf("*File size: %i\n", file_size);
+
             // Send file
             char fileBuffer[1000];
             int block_len = 0;
@@ -92,6 +97,7 @@ int main(int argc, char** argv){
                 simpleSocketSend(connfd, sendchunkPtr, sizeof(struct SimpleChunk));
                 memset(fileBuffer,0,strlen(fileBuffer));
             }
+            printf("*End of data send\n");
             //free(sendchunkPtr);
             // Close file 
             if(fclose(fp) == -1){

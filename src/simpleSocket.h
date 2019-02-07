@@ -5,12 +5,16 @@
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<netinet/in.h>
+#include <arpa/inet.h>
 #include<unistd.h>
 #include<ctype.h>
+#include<vector>
 
 #define BUFFER_SIZE 1024 
 #define MAX_SERVER 128 
 #define DEFAULT_PORT 80
+
+using namespace std;
 
 //strcpy connot excess the BUFFER_SIZE 
 
@@ -21,14 +25,24 @@ struct SimpleAddress{
 
 struct SimpleChunk{
 	int size, offset;
+    //code 0 for query, 1 for download
+    int commandCode;
 	char buffer[BUFFER_SIZE];
 	bool endflag = false;
 };
 
 
-bool portVarify(const char* port);
+
+//check the char* are digits
+bool checkdigit(const char* line);
+
+bool portVarify(const char* port); //with digit and int range
+
+int getFileSize(FILE* fp); //largest 2G file for int
 
 struct SimpleAddress getAddressbyLine(char* line);
+
+vector<int> getActiveSockList(vector<SimpleAddress> list);
 
 void setTimeout(int sockfd, int send_time, int recv_time);
 
