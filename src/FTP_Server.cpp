@@ -74,7 +74,7 @@ int main(int argc, char** argv){
             fp = fopen(filePath, "r");
             if(fp == NULL){
                 printf("open file error!\n");
-                fclose(fp);
+                // fclose(fp);
                 continue;
             }
 
@@ -96,6 +96,7 @@ int main(int argc, char** argv){
                 strcpy(sendchunk.buffer, fileBuffer);
                 simpleSocketSend(connfd, sendchunkPtr, sizeof(struct SimpleChunk));
                 memset(fileBuffer,0,strlen(fileBuffer));
+                //sleep(2); //test for sending block
             }
             printf("*End of data send\n");
             //free(sendchunkPtr);

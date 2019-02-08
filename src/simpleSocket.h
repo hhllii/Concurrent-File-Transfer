@@ -9,10 +9,13 @@
 #include<unistd.h>
 #include<ctype.h>
 #include<vector>
+#include <algorithm>
 
 #define BUFFER_SIZE 1024 
 #define MAX_SERVER 128 
 #define DEFAULT_PORT 80
+#define MAX_FILENAME_LEN 255 
+#define MAX_PATH_LEN 4096
 
 using namespace std;
 
@@ -42,7 +45,7 @@ int getFileSize(FILE* fp); //largest 2G file for int
 
 struct SimpleAddress getAddressbyLine(char* line);
 
-vector<int> getActiveSockList(vector<SimpleAddress> list);
+vector<int> getActiveSockList(vector<SimpleAddress> list); // return the socket created with active server
 
 void setTimeout(int sockfd, int send_time, int recv_time);
 
