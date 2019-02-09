@@ -4,13 +4,15 @@ An application that enables a client to download “chunks” of a file from mul
 # README
 Name: Shuli He
 Email: she77@ucsc.edu
-
+Using C++
 # Files
-bin - compiled program; dest/ destination fold files/ server files fold
-doc - report - [report link](./doc/report.pdf).
+bin - compiled program; dest/ destination fold; files/ server files fold
+doc - report: design details
 src - source file
 
 #Usage
+Use command 'make' (Makefile) to compile the source code.(Using g++)
+
 Client:
 ./myclient <server-info.txt> <num-connections> <filename>
 example: ./myclient serverinfo.txt 3 set
