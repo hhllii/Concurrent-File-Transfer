@@ -15,7 +15,7 @@
 #include<cstdlib>
 
 #define BUFFER_SIZE 1024 
-#define MAX_SERVER 128 
+#define MAX_SERVER 1024 
 #define DEFAULT_PORT 80
 #define MAX_FILENAME_LEN 255 
 #define MAX_PATH_LEN 4096
