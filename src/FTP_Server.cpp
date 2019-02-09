@@ -17,6 +17,7 @@ int main(int argc, char** argv){
     // Varify port
     if(!portVarify(argv[1])){
         printf("\n Port invalid\n"); 
+        return 0;
     }
     // Listen socket create
     if( (listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 ){
