@@ -88,6 +88,13 @@ int getFileSize(FILE* fp){
     return file_size;
 }
 
+void filecat(FILE* fp1, FILE* fp2){
+	char* buffer[1];
+	while(fread(buffer, sizeof(char), 1, fp2)){
+		fwrite(buffer, sizeof(char), 1, fp1);
+	}
+}
+
 void simpleSocketSend(int sockfd, SimpleChunk* chunk, int chunk_size){
     // Send data
     if (send(sockfd, chunk, chunk_size, 0) < 0)

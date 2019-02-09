@@ -2,6 +2,16 @@
 
 using namespace std;
 
+void getFilepath(int idx, const char* filename, char* filepath){
+    // Construct file path
+    char filepre[5];
+    sprintf(filepre,"%d", idx); 
+    strcpy(filepath,DEST_PATH);
+    strcat(filepath,filepre);
+    strcat(filepath,"_");
+    strcat(filepath,filename);
+}
+
 void *downloadThread(void *arg){
     struct ThreadAttri *temp;
     temp = (struct ThreadAttri *)arg;
@@ -12,12 +22,15 @@ void *downloadThread(void *arg){
     // Create socket
     int sockfd = socklist[t_idx];
     printf("Thread %d start\n", t_idx);
+
     // Send filename
     char* filename = temp -> filename; //only the ori filename will be modified as create new file
     struct SimpleChunk chunk;
     struct SimpleChunk* chunkPtr = &chunk;
     strcpy(chunk.buffer, filename); //*bug filename might be longer than 1024
     chunk.endflag = true;
+    chunk.size = connectNum;
+    chunk.offset = t_idx;
     simpleSocketSend(sockfd, chunkPtr, sizeof(struct SimpleChunk));
     printf("*Client filename sent %s\n", chunk.buffer); 
 
@@ -25,14 +38,10 @@ void *downloadThread(void *arg){
     printf("*Server return message: \n");
     SimpleChunk recvchunk;
     SimpleChunk *recvchunkPtr = &recvchunk;
+
     // Construct file path
     char filepath[MAX_PATH_LEN]; //*bug didn't check the len if filename too long 
-    char filepre[5];
-    sprintf(filepre,"%d", t_idx); 
-    strcpy(filepath,"./dest/");
-    strcat(filepath,filepre);
-    strcat(filepath,"_");
-    strcat(filepath,filename);
+    getFilepath(t_idx, filename, filepath);
     FILE* fp = fopen(filepath, "w");
     if(fp == NULL){
         printf("Create file error!\n");
@@ -76,6 +85,11 @@ int main(int argc, char const *argv[])
         printf("Excess the max num-connections\n");
         return 0;
     }
+    if(strlen(argv[3]) > MAX_FILENAME_LEN){
+        printf("Excess the max filename length\n");
+        return 0;
+    }
+
 
     const char* serverFilename = argv[1]; //set servers list
     connectNum = atoi(argv[2]); //set connection num
@@ -152,50 +166,39 @@ int main(int argc, char const *argv[])
         //     printf("Thread failed to download file\n");
         //     return 0;
         // }
-        free(attrilist[i]);// Free attri
+        free(attrilist[i]);// Free attri after thread over
     }
-    
 
-
-
-    // // Create socket
-    // sockfd = socklist[0];
-
-    // // Send filename
-    // SimpleChunk chunk;
-    // SimpleChunk* chunkPtr = &chunk;
-    // strcpy(chunk.buffer, filename); //*bug filename might be longer than 1024
-    // chunk.endflag = true;
-    // simpleSocketSend(sockfd, chunkPtr, sizeof(struct SimpleChunk));
-    // printf("*Client filename sent\n"); 
-
-    // printf("*Server return message: \n");
-    // SimpleChunk recvchunk;
-    // SimpleChunk *recvchunkPtr = &recvchunk;
-    // FILE* fp = fopen("cset", "w");
-    // if(fp == NULL){
-    //     printf("Create file error! No such file: %s\n", argv[1]);
-    //     fclose(fp);
-    //     exit(1);
-    // }
-    // while(1){
-    //     memset(&recvchunk,0,sizeof(recvchunk));
-    //     // memset(recvchunk.buffer,'0',strlen(recvchunk.buffer));
-    //     if(simpleSocketRecv(sockfd, recvchunkPtr, sizeof(struct SimpleChunk)) > 0){
-    //         printf("%s", recvchunk.buffer);
-    //         fwrite(recvchunk.buffer, sizeof(char), strlen(recvchunk.buffer), fp);
-    //     }else{
-    //         printf("%s\n", recvchunk.buffer);
-    //         printf("*End of data recv\n");
-    //         break;
-    //     }
-    // }
-    //free(chunkPtr);
-    // End of connection
-    //close all socket
+    //close socket
     for(int i = 0; i < connectNum; ++i){
         close(socklist[i]);
     }
+
+    // Filecat Assembling 
+    char combinefilepath[MAX_PATH_LEN];
+    strcpy(combinefilepath,DEST_PATH);
+    strcat(combinefilepath,filename);
+    FILE *fcombine = fopen(combinefilepath, "w");
+    if(fcombine == NULL){
+        printf("Create final file error!\n");
+        return 0;
+    }
+    for(int i = 0; i < connectNum; ++i){
+        FILE *fpcat;
+        char filepath[MAX_PATH_LEN];
+        getFilepath(i, filename, filepath);
+        //printf("Cat file %s\n", filepath);
+        fpcat = fopen(filepath, "r");
+        if(fpcat == NULL){
+            printf("Missing file part error!\n");
+            return 0;
+        }
+        filecat(fcombine, fpcat);
+        fclose(fpcat);
+        if(remove(filepath))
+            printf("Could not delete the temp file %s \n", filepath);
+        }
+    fclose(fcombine);
     
     return 0; 
 } 

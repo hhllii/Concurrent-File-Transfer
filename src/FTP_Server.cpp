@@ -1,14 +1,4 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<errno.h>
-#include<sys/types.h>
-#include<sys/socket.h>
-#include<netinet/in.h>
-#include<unistd.h>
-#include<ctype.h>
-#include "simpleSocket.h"
-
+#include "FTP_Server.h"
 
 int main(int argc, char** argv){
     int  listenfd, connfd;
@@ -17,7 +7,7 @@ int main(int argc, char** argv){
     int  n;
     SimpleChunk chunk;
     SimpleChunk *chunkPtr = &chunk;
-    char* filePath;
+    char* filename;
 
     if(argc != 2){
         printf("Usage: ./myserver <port>\n");
@@ -64,10 +54,15 @@ int main(int argc, char** argv){
                 printf("*End of client \n");
                 continue;
             }else{
-                printf("Received message from client: %s\n", chunk.buffer);
-                filePath = chunk.buffer;
+                printf("Received filename from client: %s\n", chunk.buffer);
+                printf("Num-connection: %d\nOffset: %d\n", chunk.size, chunk.offset);
+                filename = chunk.buffer;
             }
 
+
+            char filePath[MAX_PATH_LEN];
+            strcpy(filePath,FILE_PATH);
+            strcat(filePath,filename);
             // Handle the command
             FILE *fp;
             //const char* filePath = "set"; // setfile
@@ -79,15 +74,23 @@ int main(int argc, char** argv){
             }
 
             // Get file size
-            int file_size = getFileSize(fp);
-            printf("*File size: %i\n", file_size);
+            int fileSize = getFileSize(fp);
+            printf("*File size: %i\n", fileSize);
+
+            // Get the file part size for each thread
+            int partSize = fileSize/chunk.size; //*bug might have some precise lose with the last part of file
+            printf("*File part size: %i\n", partSize);
 
             // Send file
             char fileBuffer[1000];
             int block_len = 0;
-            SimpleChunk sendchunk;
-            SimpleChunk *sendchunkPtr = &sendchunk;
-            while( (block_len = fread(fileBuffer, sizeof(char), 1000, fp)) > 0)
+            struct SimpleChunk sendchunk;
+            struct SimpleChunk *sendchunkPtr = &sendchunk;
+            int sendCount = 0;
+            // Fp to send start pos
+            fseek(fp, chunk.offset * partSize, SEEK_SET );
+
+            while ((sendCount + 1000) < partSize && (block_len = fread(fileBuffer, sizeof(char), 1000, fp)) > 0 )
             {
                 // Send data
                 //clean struct
@@ -97,7 +100,28 @@ int main(int argc, char** argv){
                 simpleSocketSend(connfd, sendchunkPtr, sizeof(struct SimpleChunk));
                 memset(fileBuffer,0,strlen(fileBuffer));
                 //sleep(2); //test for sending block
+                sendCount += block_len;
             }
+            //send last block
+            if(chunk.offset == chunk.size - 1){
+                //last part of fiile
+                memset(&sendchunk,0,sizeof(sendchunk));
+                int lastLen = fileSize - chunk.offset * partSize;
+                block_len = fread(fileBuffer, sizeof(char), lastLen, fp); 
+                sendchunk.size = block_len;
+                strncpy(sendchunk.buffer, fileBuffer, block_len);
+                //strcpy(sendchunk.buffer, fileBuffer);
+                simpleSocketSend(connfd, sendchunkPtr, sizeof(struct SimpleChunk));
+                memset(fileBuffer,0,strlen(fileBuffer));
+            }else{//send remaining byte
+                memset(&sendchunk,0,sizeof(sendchunk));
+                block_len = fread(fileBuffer, sizeof(char), partSize - sendCount, fp); 
+                sendchunk.size = block_len;
+                strcpy(sendchunk.buffer, fileBuffer);
+                simpleSocketSend(connfd, sendchunkPtr, sizeof(struct SimpleChunk));
+                memset(fileBuffer,0,strlen(fileBuffer));
+            }
+
             printf("*End of data send\n");
             //free(sendchunkPtr);
             // Close file 

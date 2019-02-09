@@ -10,6 +10,9 @@
 #include<ctype.h>
 #include<vector>
 #include <algorithm>
+#include<iostream>
+#include<fstream>
+#include<cstdlib>
 
 #define BUFFER_SIZE 1024 
 #define MAX_SERVER 128 
@@ -27,9 +30,8 @@ struct SimpleAddress{
 };
 
 struct SimpleChunk{
-	int size, offset;
+	int size, offset; //size number of connection
     //code 0 for query, 1 for download
-    int commandCode;
 	char buffer[BUFFER_SIZE];
 	bool endflag = false;
 };
@@ -42,6 +44,8 @@ bool checkdigit(const char* line);
 bool portVarify(const char* port); //with digit and int range
 
 int getFileSize(FILE* fp); //largest 2G file for int
+
+void filecat(FILE* fp1, FILE* fp2); // 1 byte copy
 
 struct SimpleAddress getAddressbyLine(char* line);
 

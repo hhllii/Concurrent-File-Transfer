@@ -12,6 +12,8 @@
 
 #include "simpleSocket.h"
 
+#define DEST_PATH "./dest/"
+
 struct ThreadAttri{
     int t_idx, connectNum;
     char filename[MAX_FILENAME_LEN]; //use one buffer 
