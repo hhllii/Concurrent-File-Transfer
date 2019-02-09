@@ -122,6 +122,10 @@ int main(int argc, char const *argv[])
 
     //set connection num
     int activeNum = vsocklist.size();
+    if(activeNum == 0){
+        printf("No server aviliable! Check server-info.");
+        return 0;
+    }
     connectNum = min(connectNum, activeNum);
 
     //vector to int []
